@@ -28,10 +28,10 @@ public class Bubble extends ApplicationAdapter {
 	private SpriteBatch batch;
 	private OrthographicCamera camera;
 	private Rectangle hand;
-	private Array<Rectangle> raindrops;
+	private Array<Rectangle> bubbles;
 	private Array<Integer> value;
-	private long lastDropTime;
-	private long firstDropTime;
+	private long lastBubbleTime;
+	private long firstBubbleTime;
 	private long score = 0;
 
 	@Override
@@ -42,7 +42,7 @@ public class Bubble extends ApplicationAdapter {
 		dropImage3 = new Texture(Gdx.files.internal("grey.png"));
 		handImage = new Texture(Gdx.files.internal("hand.png"));
 
-		//Intialize the array for score points
+		//Intialize the array to score the points
 		value = new Array<Integer>();
 
 		// load the drop sound effect and the rain background "music"
@@ -58,31 +58,32 @@ public class Bubble extends ApplicationAdapter {
 		camera.setToOrtho(false, 800, 480);
 		batch = new SpriteBatch();
 
-		// create a Rectangle to logically represent the bucket
+		// create a Rectangle to logically represent the hand
 		hand = new Rectangle();
-		hand.x = 800 / 2 - 64 / 2; // center the bucket horizontally
-		hand.y = 20; // bottom left corner of the bucket is 20 pixels above the bottom screen edge
+		hand.x = 800 / 2 - 64 / 2; // center the hand horizontally
+		hand.y = 20; // bottom left corner of the hand is 20 pixels above the bottom screen edge
 		hand.width = 64;
 		hand.height = 64;
 
-		// create the raindrops array and spawn the first raindrop
-		raindrops = new Array<Rectangle>();
-		spawnRaindrop();
+		// create the bubbles array and spawn the first bubble
+		bubbles = new Array<Rectangle>();
+		spawnBubble();
 
 		//Get first drop time
-		firstDropTime = TimeUtils.nanoTime();
+		firstBubbleTime = TimeUtils.nanoTime();
 	}
 
-	private void spawnRaindrop() {
-		Rectangle raindrop = new Rectangle();
-		raindrop.x = MathUtils.random(0, 800-64);
-		raindrop.y = 480;
-		raindrop.width = 64;
-		raindrop.height = 64;
-		raindrops.add(raindrop);
+	//Create a bubble
+	private void spawnBubble() {
+		Rectangle bubble = new Rectangle();
+		bubble.x = MathUtils.random(0, 800-64);
+		bubble.y = 480;
+		bubble.width = 64;
+		bubble.height = 64;
+		bubbles.add(bubble);
 		int randValue = MathUtils.random(0, 2);;
 		value.add(randValue);
-		lastDropTime = TimeUtils.nanoTime();
+		lastBubbleTime = TimeUtils.nanoTime();
 	}
 
 	@Override
@@ -101,10 +102,10 @@ public class Bubble extends ApplicationAdapter {
 		// coordinate system specified by the camera.
 		batch.setProjectionMatrix(camera.combined);
 
-		// begin a new batch and draw the bucket and
-		// all drops
+		// begin a new batch and draw the hand and
+		// all bubbles
 		long maxTime = 300000000;
-		if((TimeUtils.nanoTime() - firstDropTime) > (long)(maxTime*100))
+		if((TimeUtils.nanoTime() - firstBubbleTime) > (long)(maxTime*100))
 		{
 			batch.begin();
 			BitmapFont font = new BitmapFont();
@@ -115,15 +116,15 @@ public class Bubble extends ApplicationAdapter {
 		else {
 			batch.begin();
 			batch.draw(handImage, hand.x, hand.y);
-
+			//Create the bubbles color on the basis of the value that we get randomly
 			int c = 0;
-			for (Rectangle raindrop : raindrops) {
+			for (Rectangle bubble : bubbles) {
 				if (value.get(c) == 0) {
-					batch.draw(dropImage1, raindrop.x, raindrop.y);
+					batch.draw(dropImage1, bubble.x, bubble.y);
 				} else if (value.get(c) == 1) {
-					batch.draw(dropImage2, raindrop.x, raindrop.y);
+					batch.draw(dropImage2, bubble.x, bubble.y);
 				} else {
-					batch.draw(dropImage3, raindrop.x, raindrop.y);
+					batch.draw(dropImage3, bubble.x, bubble.y);
 				}
 				c++;
 			}
@@ -140,27 +141,27 @@ public class Bubble extends ApplicationAdapter {
 			if (Gdx.input.isKeyPressed(Keys.LEFT)) hand.x -= 200 * Gdx.graphics.getDeltaTime();
 			if (Gdx.input.isKeyPressed(Keys.RIGHT)) hand.x += 200 * Gdx.graphics.getDeltaTime();
 
-			// make sure the bucket stays within the screen bounds
+			// make sure the hand stays within the screen bounds
 			if (hand.x < 0) hand.x = 0;
 			if (hand.x > 800 - 64) hand.x = 800 - 64;
 
-			// check if we need to create a new raindrop
-			if (TimeUtils.nanoTime() - lastDropTime > 1000000000) spawnRaindrop();
+			// check if we need to create a new bubble
+			if (TimeUtils.nanoTime() - lastBubbleTime > 1000000000) spawnBubble();
 
-			// move the raindrops, remove any that are beneath the bottom edge of
-			// the screen or that hit the bucket. In the latter case we play back
+			// move the bubbles, remove any that are beneath the bottom edge of
+			// the screen or that hit the hand. In the latter case we play back
 			// a sound effect as well.
-			Iterator<Rectangle> iter = raindrops.iterator();
+			Iterator<Rectangle> iter = bubbles.iterator();
 			Iterator<Integer> iterValue = value.iterator();
 			while (iter.hasNext()) {
-				Rectangle raindrop = iter.next();
+				Rectangle bubble = iter.next();
 				Integer val = iterValue.next();
-				raindrop.y -= 200 * Gdx.graphics.getDeltaTime();
-				if (raindrop.y + 64 < 0) {
+				bubble.y -= 200 * Gdx.graphics.getDeltaTime();
+				if (bubble.y + 64 < 0) {
 					iter.remove();
 					iterValue.remove();
 				}
-				if (raindrop.overlaps(hand)) {
+				if (bubble.overlaps(hand)) {
 					dropSound.play();
 					iter.remove();
 					iterValue.remove();
